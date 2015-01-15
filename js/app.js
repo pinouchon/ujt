@@ -19,10 +19,10 @@
   var index = 'bestbuy'; // replace by your own index name
   var helper = new AlgoliaSearchHelper(algolia, index, {
     // list of conjunctive facets (link to refine)
-    facets: ['type', 'shipping', 'customerReviewCount'],
+    facets: ['type', 'shipping', 'customerReviewCount', 'manufacturer'],
 
     // list of disjunctive facets (checkbox to refine)
-    disjunctiveFacets: ['category', 'salePrice_range', 'manufacturer'],
+    disjunctiveFacets: ['category', 'salePrice_range'],
 
     // number of results per page
     hitsPerPage: 10
@@ -87,14 +87,27 @@
         
         if (facetConfig.name === 'customerReviewCount') {
           // add a slider fetching the 'max' value of 'customerReviewCount' from `content.facets_stats.customerReviewCount`
-          html += $sliderTemplate.render({ facet: facetConfig.name, title: facetConfig.title, max: content.facets_stats.customerReviewCount.max, current: minReviewsCount });
+          html += $sliderTemplate.render({ 
+            facet: facetConfig.name,
+            title: facetConfig.title,
+            max: content.facets_stats.customerReviewCount.max,
+            current: minReviewsCount 
+          });
         } else {
           // other facets
 
           // collect all values from `facetResult` to sort them by facetConfig.sortFunction
           var values = [];
           for (var v in facetResult) {
-            values.push({ label: v, value: v, count: facetResult[v], refined: helper.isRefined(facetConfig.name, v) });
+            var value = { 
+              label: v,
+              value: v,
+              eltId: generateSlug(facetConfig.name) + '-' + generateSlug(v),
+              count: facetResult[v],
+              excluded: helper.isExcluded(facetConfig.name, v),
+              refined: helper.isRefined(facetConfig.name, v)
+            };
+            values.push(value);
           }
           // sort the values
           values.sort(function(a, b) {
@@ -117,6 +130,7 @@
               facet: facetConfig.name,
               title: facetConfig.title,
               values: values,
+              displaySwitch: isFacetExclusionAllowed(helper),
               disjunctive: isDisjunctive,
               has_autocomplete: true
             });
@@ -182,7 +196,7 @@
     }
 
     // pimp checkboxes
-    $('input[type="checkbox"]').checkbox();
+    $('input[type="checkbox"]:not(.switch)').checkbox();
 
     // render pagination
     var pages = [];
@@ -273,10 +287,10 @@
   $q.on('keyup change', function() {
     if ($q.val() != lastQuery) {
       lastQuery = $q.val();
-      // performing a new full-text query reset the pagination and the refinements
-      minReviewsCount = 0;
-      helper.setPage(0);
-      helper.clearRefinements();
+      // // performing a new full-text query reset the pagination and the refinements
+      // minReviewsCount = 0;
+      // helper.setPage(0);
+      // helper.clearRefinements();
       search();
     }
   }).focus();
@@ -291,7 +305,13 @@
   window.toggleRefine = function(facet, value) {
     // refinining a facet reset the pagination
     helper.setPage(0);
-    helper.toggleRefine(facet, value);
+    if (helper.isExcluded(facet, value)) {
+      helper.toggleExclude(facet, value);
+    }
+    else {
+      helper.toggleRefine(facet, value);
+    }
+    
   };
   window.gotoPage = function(page) {
     helper.gotoPage(+page - 1);
@@ -306,4 +326,30 @@
     search();
   };
 
+  window.toggleOnOffSwitch = function($elt, facet, value) {
+    var isSwitchedOn = $elt.is(':checked');
+    if (helper.isRefined(facet, value)) {
+      helper.removeRefine(facet, value);
+      helper.addExclude(facet, value);
+    }
+    else {
+      helper.removeExclude(facet, value);
+      helper.addRefine(facet, value)
+    }
+    search();
+  };
+
 })(jQuery);
+
+  function isFacetExclusionAllowed(helper) {
+    return $('#q').val() !== '';
+       // || !$.isEmptyObject(helper.disjunctiveRefinements) || !$.isEmptyObject(helper.refinements);
+  }
+
+  function generateSlug (value) {
+    // 1) convert to lowercase
+    // 2) remove dashes and pluses
+    // 3) replace spaces with dashes
+    // 4) remove everything but alphanumeric characters and dashes
+    return value.toLowerCase().replace(/-+/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  };

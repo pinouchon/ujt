@@ -90,7 +90,7 @@
             </div>
             {{#onoffswitch}}
             <div class="list-item-onoffswitch-container">
-              <div class="onoffswitch is-on">
+              <div class="onoffswitch {{#excluded}}is-on{{/excluded}}">
                 <a class"on " href="#" onclick="toggleExcludeRefine('{{ facet }}', '{{ value }}'); return false;"><span class="label label-success">On</span></a>
                 <a class"off " href="#" onclick="toggleExcludeRefine('{{ facet }}', '{{ value }}'); return false;"><span class="label label-danger">Off</span></a>
               </div>
@@ -129,32 +129,23 @@
 
   <!-- Facet template -->
   <script type="text/template" id="facet-with-autocomplete-template">
-    <div class="facet {{facet}}-container has-autocomplete">
+    <div class="facet {{facet}}-container has-autocomplete {{^displaySwitch}}hide-switch{{/displaySwitch}}">
       <ul class="list-group">
         <!-- facet title -->
         <li class="list-group-item text-center list-group-item-info"><b>{{ title }}</b></li>
 
         {{#values}}
-          <li class="{{#refined}}refined{{/refined}} list-group-item">
-            <div class="list-group-item-container">
-              {{#disjunctive}}
-                <input class="checkbox" type="checkbox" {{#refined}}checked="checked"{{/refined}} onclick="toggleRefine('{{ facet }}', '{{ value }}'); return false;">
-              {{/disjunctive}}
-              <a href="#" onclick="toggleRefine('{{ facet }}', '{{ value }}'); return false;">{{ label }}</a> ({{ count }})
-            </div>
-            {{#onoffswitch}}
-            <div class="list-item-onoffswitch-container">
-              <div class="onoffswitch is-on">
-                <a class"on " href="#" onclick="toggleExcludeRefine('{{ facet }}', '{{ value }}'); return false;"><span class="label label-success">On</span></a>
-                <a class"off " href="#" onclick="toggleExcludeRefine('{{ facet }}', '{{ value }}'); return false;"><span class="label label-danger">Off</span></a>
-              </div>
-            </div>
-            {{/onoffswitch}}
+          <li class="{{#refined}}refined{{/refined}} {{#excluded}}excluded{{/excluded}} list-group-item">
+            <div class="facet-swich-container">
+              <input type="checkbox" id="{{eltId}}" name="{{ label }}" class="switch" onchange="toggleOnOffSwitch($(this), '{{ facet }}', '{{ value }}'); return false;" {{^excluded}}checked="checked"{{/excluded}} />
+              <label for="{{ eltId }}">{{ label }} {{^excluded}}({{ count }}){{/excluded}}</label> 
+            </div>     
+            <a class="remove-facet" href="#" onclick="toggleRefine('{{ facet }}', '{{ value }}'); return false;">X</a>
           </li>
         {{/values}}
 
         <li class="autocomplete list-group-item">
-          <input class="typeahead form-control string" type="text" placeholder="Search for {{title}}" id="typeahead-facet-{{facet}}" data-autocomplete-source="{{facet}}" autocomplete="off"  spellcheck="false"/>
+          <input class="typeahead form-control string" type="text" placeholder="Search for {{title}}s" id="typeahead-facet-{{facet}}" data-autocomplete-source="{{facet}}" autocomplete="off"  spellcheck="false"/>
         </li>
       </ul>
     </div>
@@ -175,7 +166,7 @@
           {{{ _highlightResult.shortDescription.value }}}
         </p>
         <ul class="list-inline">
-          <li>{{{ _highlightResult.manufacturer.value }}}</li>
+          <li class="manufacturer">Sold by {{{ _highlightResult.manufacturer.value }}}</li>
           <li>{{{ _highlightResult.category.value }}}</li>
           <li>{{ type }}</li>
         </ul>
@@ -224,12 +215,17 @@
   <!-- Dependencies -->
   <script src="//cdn.jsdelivr.net/jquery/1.11.1/jquery.min.js"></script>
   <script src="//cdn.jsdelivr.net/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-  <script src="//cdn.jsdelivr.net/algoliasearch/2.8/algoliasearch.min.js"></script>
+  <!--<script src="//cdn.jsdelivr.net/algoliasearch/2/algoliasearch.min.js"></script>-->
+  <!--<script src="//cdn.rawgit.com/algolia/algoliasearch-client-js/master/src/algoliasearch.js"></script>-->
+  <!--<script src="//cdn.rawgit.com/algolia/j-client-js/master/src/algoliasearch.helper.js"></script>-->
+  <script src="js/algoliasearch.js"></script>
+  <script src="js/algoliasearch.helper.js"></script>
   <script src="//cdn.jsdelivr.net/hogan.js/3.0.0/hogan.common.js"></script>
   <script src="//cdn.rawgit.com/twitter/typeahead.js/master/dist/typeahead.jquery.min.js"></script>
   <script src="//cdn.rawgit.com/twitter/typeahead.js/master/dist/bloodhound.min.js"></script>
   <script src="js/bootstrap-slider.js"></script>
   <script src="js/bootstrap-checkbox.js"></script>
+  
   <!-- /Dependencies -->
   <script src="js/app.js"></script>
 </body>
