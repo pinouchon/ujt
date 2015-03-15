@@ -1,6 +1,6 @@
 (function($) {
   // Client initialization
-    var algolia = new AlgoliaSearch('latency', '6be0576ff61c053d5f9a3225e2a90f76', {dsn: true, tld: 'net'}); // replace by your own ApplicationID and SearchableOnlyAPIKey
+  var algolia = new AlgoliaSearch('ZATSZZ344T', '3d5d1564fca0f19c638f038c97d8ec01');
 
   // DOM binding
   var $hits = $('#hits');
@@ -15,13 +15,13 @@
   var $sliderTemplate = Hogan.compile($('#slider-template').text());
 
   // Helper initialization
-  var index = 'bestbuy'; // replace by your own index name
+  var index = 'ujt'; // replace by your own index name
   var helper = new AlgoliaSearchHelper(algolia, index, {
     // list of conjunctive facets (link to refine)
-    facets: ['type', 'shipping', 'customerReviewCount'],
+    facets: ['salary'],
 
     // list of disjunctive facets (checkbox to refine)
-    disjunctiveFacets: ['category', 'salePrice_range', 'manufacturer'],
+    disjunctiveFacets: ['OrganisationName', 'Locations', 'WorkType', 'WorkSchedule'],
 
     // number of results per page
     hitsPerPage: 10
@@ -38,17 +38,15 @@
   // Facets ordered by order of display: here type will be displayed first and manufacture at the end
   // Also includes the refinements initialization & configuration
   function sortByCountDesc(a, b) { return b.count - a.count; }
-  function sortByNumAsc(a, b) { return parseInt(a.label) - parseInt(b.label); }
   var FACETS = [
-    { name: 'type', title: 'Type', sortFunction: sortByCountDesc },
-    { name: 'shipping', title: 'Shipping', sortFunction: sortByCountDesc },
-    { name: 'customerReviewCount', title: '# Reviews' },
-    { name: 'category', title: 'Categories', sortFunction: sortByCountDesc, topListIfRefined: true },
-    { name: 'salePrice_range', title: 'Price', sortFunction: sortByNumAsc },
-    { name: 'manufacturer', title: 'Manufacturer', sortFunction: sortByNumAsc, topListIfRefined: true }
+    { name: 'Locations', title: 'Location', sortFunction: sortByCountDesc },
+    { name: 'salary', title: 'Salary' },
+    { name: 'WorkType', title: 'Work Type', sortFunction: sortByCountDesc },
+    { name: 'WorkSchedule', title: 'Work Schedule', sortFunction: sortByCountDesc }
+
   ];
   var refinements = {};
-  var minReviewsCount = 0;
+  var minSalary = 0;
 
   // Callback called on each keystroke, rendering the results
   function searchCallback(success, content) {
@@ -72,7 +70,7 @@
     html = '';
     var facetResult = null;
     var facetConfig = null;
-    var isDisjunctive = null; 
+    var isDisjunctive = null;
 
     for (var j=0; j<FACETS.length; ++j) {
       facetConfig = FACETS[j];
@@ -80,10 +78,10 @@
       isDisjunctive = (content['disjunctiveFacets'][facetConfig.name]) ? true : false;
 
       if (facetResult) {
-        
-        if (facetConfig.name === 'customerReviewCount') {
+
+        if (facetConfig.name === 'salary') {
           // add a slider fetching the 'max' value of 'customerReviewCount' from `content.facets_stats.customerReviewCount`
-          html += $sliderTemplate.render({ facet: facetConfig.name, title: facetConfig.title, max: content.facets_stats.customerReviewCount.max, current: minReviewsCount });
+          html += $sliderTemplate.render({ facet: facetConfig.name, title: facetConfig.title, max: content.facets_stats.salary.max, current: minSalary });
         } else {
           // other facets
 
@@ -116,13 +114,13 @@
             disjunctive: isDisjunctive
           });
         }
-      
+
       }
     }
     $facets.html(html);
 
     // bind slider
-    $('#customerReviewCount-slider').slider({
+    $('#salary-slider').slider({
       formater: function(e) {
         if (e === 0) {
           return 'All';
@@ -130,7 +128,7 @@
         return '> ' + e;
       }
     }).on('slideStop', function(ev) {
-      minReviewsCount = ev.value;
+      minSalary = ev.value;
       search();
     });
 
@@ -174,7 +172,7 @@
         }
       }
     }
-    location.replace('#q=' + encodeURIComponent(content.query) + '&page=' + content.page + '&minReviewsCount=' + minReviewsCount + '&refinements=' + encodeURIComponent(JSON.stringify(refinements)));
+    location.replace('#q=' + encodeURIComponent(content.query) + '&page=' + content.page + '&minSalary=' + minSalary + '&refinements=' + encodeURIComponent(JSON.stringify(refinements)));
 
     // scroll on top
     window.scrollTo(0, 0);
@@ -187,8 +185,8 @@
       maxValuesPerFacet: 50
     };
     // plug review_count slider refinement
-    if (minReviewsCount > 0) {
-      params.numericFilters = 'customerReviewCount>=' + minReviewsCount;
+    if (minSalary > 0) {
+      params.numericFilters = 'salary>=' + minSalary;
     }
     // if we're sorting by something,
     // make the typo-tolerance more strict
@@ -197,6 +195,7 @@
       params.typoTolerance = false;
     }
     // perform the query
+    console.log('binding search', $q.val(), params);
     helper.search($q.val(), searchCallback, params);
   }
 
@@ -204,12 +203,12 @@
   if (location.hash && location.hash.indexOf('#q=') === 0) {
     var params = location.hash.substring(3);
     var pageParamOffset = params.indexOf('&page=');
-    var minReviewsCountParamOffset = params.indexOf('&minReviewsCount=');
+    var minSalaryParamOffset = params.indexOf('&minSalary=');
     var refinementsParamOffset = params.indexOf('&refinements=');
 
     var q = decodeURIComponent(params.substring(0, pageParamOffset));
-    var page = parseInt(params.substring(pageParamOffset + 6, minReviewsCountParamOffset));
-    minReviewsCount = parseInt(params.substring(minReviewsCountParamOffset + 17, refinementsParamOffset));
+    var page = parseInt(params.substring(pageParamOffset + 6, minSalaryParamOffset));
+    minSalary = parseInt(params.substring(minSalaryParamOffset + 17, refinementsParamOffset));
     var refinements = JSON.parse(decodeURIComponent(params.substring(refinementsParamOffset + 13)));
 
     $q.val(q);
@@ -227,7 +226,7 @@
     if ($q.val() != lastQuery) {
       lastQuery = $q.val();
       // performing a new full-text query reset the pagination and the refinements
-      minReviewsCount = 0;
+      minSalary = 0;
       helper.setPage(0);
       helper.clearRefinements();
       search();
